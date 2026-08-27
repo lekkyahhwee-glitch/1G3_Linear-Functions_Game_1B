@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Castle Builder — Linear Functions Part 1B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B3A6B; --paper:#F1F7F5; --panel:#15294D;
+    --wood:#A9662E; --wood-dark:#7A4A20;
+    --stone:#9AA0A8; --stone-dark:#6E747C;
+    --gold:#FFC93C; --gold-dark:#C7860A; --gold-shine:#FFF6C9;
+    --coral:#FF5A45;
+    --line:rgba(241,247,245,0.14);
+    --toolbar-h:56px;
+    --font-display:'Space Grotesk', sans-serif; --font-body:'Inter', sans-serif; --font-mono:'JetBrains Mono', monospace;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:var(--font-body); color:#fff; background:var(--ink); min-height:100vh; padding-bottom:calc(var(--toolbar-h) + 1rem); }
+  h1,h2,h3{ font-family:var(--font-display); font-weight:800; letter-spacing:-0.01em; }
+  .wrap{ max-width:940px; margin:0 auto; padding:2rem 5vw 1rem; }
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  /* ---------- Intro ---------- */
+  .intro-card{ background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:2rem 1.6rem; text-align:center; }
+  .intro-card h1{ font-size:1.7rem; margin-bottom:0.6rem; }
+  .intro-card p{ font-family:var(--font-mono); font-size:0.82rem; opacity:0.75; line-height:1.7; margin-bottom:1.4rem; }
+  .intro-card p strong{ color:var(--gold); }
+  .intro-field{ margin-bottom:0.9rem; text-align:left; max-width:340px; margin-left:auto; margin-right:auto; }
+  .intro-field label{ font-family:var(--font-mono); font-size:0.72rem; opacity:0.7; display:block; margin-bottom:0.3rem; }
+  .intro-field input{ width:100%; background:rgba(255,255,255,0.08); border:1.5px solid var(--line); border-radius:8px; padding:0.7rem 0.9rem; color:#fff; font-family:var(--font-body); font-size:0.95rem; }
+  .start-btn{ font-family:var(--font-display); font-weight:800; font-size:1rem; background:var(--gold); color:#1B0F00; border:none; border-radius:12px; padding:0.85rem 2.2rem; cursor:pointer; margin-top:0.6rem; }
+
+  /* ---------- Game screen ---------- */
+  .top-bar{ display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono); font-size:0.76rem; opacity:0.75; margin-bottom:0.8rem; flex-wrap:wrap; gap:0.5rem; }
+  .stage{
+    background:linear-gradient(180deg, #FDE9C8 0%, #F7C68B 35%, #E8965F 60%, #C97350 100%);
+    border-radius:20px; border:1px solid var(--line);
+    padding:2.2rem 1.4rem 1.2rem; display:flex; flex-direction:column; align-items:center;
+    position:relative; overflow:hidden; min-height:280px;
+  }
+  .sun{ position:absolute; top:20px; right:40px; width:56px; height:56px; border-radius:50%;
+    background:radial-gradient(circle, #FFF6C9 0%, #FFD867 60%, rgba(255,216,103,0) 75%); }
+  .cloud1{ position:absolute; top:36px; left:30px; width:50px; height:18px; background:#fff; border-radius:20px; opacity:0.85; }
+  .cloud1::before{ content:''; position:absolute; width:24px; height:24px; top:-11px; left:6px; background:#fff; border-radius:50%; }
+  .cloud1::after{ content:''; position:absolute; width:20px; height:20px; top:-8px; left:26px; background:#fff; border-radius:50%; }
+  .ground{ position:absolute; bottom:0; left:0; right:0; height:22px; background:linear-gradient(180deg, #3F8F3F, #2C6B2C); border-top:3px solid #4FA84F; }
+
+  .castle-grid{ display:grid; grid-template-columns:repeat(7, 40px); grid-auto-rows:40px; gap:2px; position:relative; z-index:2; margin-top:auto; }
+  .cell{ border-radius:4px; position:relative; }
+  .cell.empty{ border:1.5px dashed rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); }
+  .cell.filled{ animation: popIn 0.4s cubic-bezier(.34,1.56,.64,1); box-shadow: inset 0 3px 0 rgba(255,255,255,0.4), inset 0 -5px 0 rgba(0,0,0,0.3); }
+  .cell.wood{ background-color:var(--wood); background-image:repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0 3px, transparent 3px 10px); }
+  .cell.stone{ background-color:var(--stone); }
+  .cell.gold{ background-color:var(--gold); position:relative; overflow:hidden; }
+  .cell.gold::after{ content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background:linear-gradient(120deg, transparent, rgba(255,255,255,0.75), transparent); animation: shine 2.4s ease-in-out infinite; }
+  @keyframes shine{ 0%{ left:-60%; } 50%{ left:120%; } 100%{ left:120%; } }
+  .cell .door{ position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:16px; height:24px; background:#3A2311; border-radius:6px 6px 0 0; }
+  @keyframes popIn{ 0%{ transform:scale(0); opacity:0; } 60%{ transform:scale(1.15); opacity:1; } 100%{ transform:scale(1); } }
+
+  .flag-pole{ position:absolute; width:3px; background:#4A3018; z-index:5; }
+  .flag{ position:absolute; opacity:0; transform-origin:left center; z-index:5; }
+  .flag.show{ animation: flagIn 0.5s ease forwards; }
+  @keyframes flagIn{ from{ opacity:0; transform:scale(0.3); } to{ opacity:1; transform:scale(1); } }
+  .flag-wood{ width:22px; height:14px; background:#C97A3E; clip-path:polygon(0 0,100% 20%,0 40%); }
+  .flag-wood.show{ animation: flagIn 0.5s ease forwards, waveSmall 2s ease-in-out 0.5s infinite; }
+  .flag-stone{ width:32px; height:20px; background:linear-gradient(135deg,#C9CFD6,#9AA0A8); clip-path:polygon(0 0,100% 15%,88% 50%,100% 85%,0 100%); }
+  .flag-stone.show{ animation: flagIn 0.5s ease forwards, waveMed 1.8s ease-in-out 0.5s infinite; }
+  .flag-gold{ width:46px; height:30px; background:linear-gradient(135deg,#FFF6C9,#FFC93C 40%,#C7860A); clip-path:polygon(0 0,100% 12%,85% 50%,100% 88%,0 100%); box-shadow:0 0 18px rgba(255,201,60,0.9); }
+  .flag-gold.show{ animation: flagIn 0.6s ease forwards, waveBig 1.5s ease-in-out 0.6s infinite; }
+  .flag-gold-crest{ position:absolute; left:6px; top:6px; font-size:12px; opacity:0; }
+  .flag-gold-crest.show{ animation: flagIn 0.6s ease 0.3s forwards; }
+  @keyframes waveSmall{ 0%,100%{ clip-path:polygon(0 0,100% 20%,0 40%); } 50%{ clip-path:polygon(0 0,96% 26%,0 40%); } }
+  @keyframes waveMed{ 0%,100%{ clip-path:polygon(0 0,100% 15%,88% 50%,100% 85%,0 100%); } 50%{ clip-path:polygon(0 0,94% 20%,84% 50%,94% 80%,0 100%); } }
+  @keyframes waveBig{ 0%,100%{ clip-path:polygon(0 0,100% 12%,85% 50%,100% 88%,0 100%); } 50%{ clip-path:polygon(0 0,92% 18%,80% 50%,92% 82%,0 100%); } }
+  .sparkle{ position:absolute; font-size:14px; opacity:0; pointer-events:none; z-index:6; }
+  .sparkle.play{ animation: sparklePop 1.4s ease-out forwards; }
+  @keyframes sparklePop{ 0%{ opacity:0; transform:translateY(0) scale(0.5); } 30%{ opacity:1; } 100%{ opacity:0; transform:translateY(-40px) scale(1.2); } }
+  .rank-banner{ position:absolute; top:10px; left:50%; transform:translateX(-50%) scale(0.7); z-index:6; font-family:var(--font-display); font-weight:800; font-size:1rem; text-align:center; opacity:0; transition:opacity 0.4s, transform 0.4s; padding:0.5rem 1.1rem; border-radius:10px; }
+  .rank-banner.show{ opacity:1; transform:translateX(-50%) scale(1); }
+  .rank-banner.gold{ background:rgba(199,134,10,0.35); color:#FFF6C9; text-shadow:0 0 14px rgba(255,201,60,0.9); border:1px solid rgba(255,201,60,0.6); }
+  .rank-banner.stone{ background:rgba(90,96,104,0.4); color:#F1F7F5; border:1px solid rgba(200,206,214,0.5); }
+  .rank-banner.wood{ background:rgba(90,58,20,0.4); color:#FDE9C8; border:1px solid rgba(201,122,62,0.5); }
+
+  .overall-bar-wrap{ width:100%; max-width:480px; margin:1rem auto 0; }
+  .overall-label{ font-family:var(--font-mono); font-size:0.74rem; opacity:0.7; margin-bottom:0.4rem; display:flex; justify-content:space-between; }
+  .overall-track{ height:12px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; }
+  .overall-fill{ height:100%; background:linear-gradient(90deg, var(--wood), var(--stone), var(--gold)); border-radius:10px; transition:width 0.4s ease; width:0%; }
+
+  /* ---------- Question card ---------- */
+  .question-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:1.4rem 1.3rem; margin-top:1.2rem; }
+  .q-skill-tag{ font-family:var(--font-mono); font-size:0.68rem; opacity:0.6; margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.04em; }
+  .q-think-badge{ display:inline-block; background:rgba(255,201,60,0.2); color:var(--gold); border:1px solid var(--gold); border-radius:6px; padding:0.1rem 0.5rem; font-size:0.7rem; font-family:var(--font-mono); margin-left:0.5rem; }
+  .q-prompt{ font-family:var(--font-display); font-weight:700; font-size:1.12rem; margin-bottom:1rem; line-height:1.55; }
+  .q-diagram{ display:flex; justify-content:center; margin-bottom:1.1rem; background:rgba(255,255,255,0.05); border-radius:12px; padding:0.8rem; }
+  .q-options{ display:flex; flex-direction:column; gap:0.6rem; }
+  .q-option{ background:rgba(255,255,255,0.06); border:1.5px solid var(--line); border-radius:10px; padding:0.75rem 0.95rem; cursor:pointer; font-family:var(--font-body); font-size:0.95rem; text-align:left; color:#fff; }
+  .q-option:hover{ background:rgba(255,255,255,0.13); }
+  .q-option.correct{ border-color:#39FF88; background:rgba(57,255,136,0.18); }
+  .q-option.wrong{ border-color:var(--coral); background:rgba(255,90,69,0.18); }
+  .q-option:disabled, .q-option.locked{ cursor:default; }
+  .q-input-row{ display:flex; gap:0.7rem; flex-wrap:wrap; align-items:center; }
+  .q-input-field{ display:flex; flex-direction:column; gap:0.3rem; }
+  .q-input-field label{ font-family:var(--font-mono); font-size:0.72rem; opacity:0.7; }
+  .q-input{ background:rgba(255,255,255,0.08); border:1.5px solid var(--line); border-radius:8px; padding:0.65rem 0.85rem; color:#fff; font-family:var(--font-mono); font-size:0.95rem; width:190px; }
+  .q-submit-btn{ background:var(--gold); color:#1B0F00; font-family:var(--font-display); font-weight:800; border:none; border-radius:10px; padding:0.7rem 1.4rem; cursor:pointer; margin-top:1.1rem; }
+  .q-submit-btn:disabled{ opacity:0.4; cursor:default; }
+  .hint-box{ background:rgba(255,201,60,0.12); border:1.5px solid var(--gold); border-radius:10px; padding:0.85rem 1rem; margin-top:1rem; font-size:0.86rem; line-height:1.55; display:none; }
+  .hint-box.show{ display:block; }
+  .help-msg{ background:rgba(255,90,69,0.14); border:1.5px solid var(--coral); border-radius:10px; padding:0.85rem 1rem; margin-top:1rem; font-size:0.86rem; line-height:1.55; display:none; }
+  .help-msg.show{ display:block; }
+  .solution-box{ background:rgba(255,255,255,0.06); border:1.5px solid var(--line); border-radius:10px; padding:0.95rem 1.05rem; margin-top:0.9rem; display:none; }
+  .solution-box.show{ display:block; }
+  .solution-box .sol-title{ font-family:var(--font-mono); font-size:0.72rem; opacity:0.7; margin-bottom:0.5rem; text-transform:uppercase; }
+  .solution-box .step{ font-family:var(--font-mono); font-size:0.88rem; padding:0.22rem 0; }
+  .feedback-line{ font-family:var(--font-mono); font-size:0.84rem; margin-top:0.8rem; display:none; }
+  .feedback-line.show{ display:block; }
+  .feedback-line.good{ color:#39FF88; }
+  .feedback-line.bad{ color:var(--coral); }
+  .continue-btn{ background:rgba(255,255,255,0.1); border:1.5px solid var(--line); color:#fff; font-family:var(--font-display); font-weight:700; border-radius:10px; padding:0.7rem 1.4rem; cursor:pointer; margin-top:1.1rem; display:none; }
+  .continue-btn.show{ display:inline-block; }
+
+  /* ---------- Math toolbar ---------- */
+  .math-toolbar{ position:fixed; left:0; right:0; bottom:0; height:var(--toolbar-h); display:flex; flex-wrap:wrap; gap:0.35rem; align-items:center; overflow-x:auto; background:#0F1D38; border-top:1px solid var(--line); padding:0.5rem 0.7rem; z-index:30; }
+  .math-toolbar button{ background:rgba(255,255,255,0.08); border:1px solid var(--line); color:#fff; border-radius:6px; padding:0.32rem 0.55rem; font-family:var(--font-mono); font-size:0.8rem; cursor:pointer; flex:0 0 auto; }
+  .math-toolbar button:hover{ background:rgba(255,255,255,0.18); }
+
+  /* ---------- Laser ---------- */
+  .laser-toggle{ position:fixed; bottom:calc(var(--toolbar-h) + 12px); right:14px; z-index:40; background:var(--panel); border:1.5px solid var(--line); color:#fff; font-family:var(--font-mono); font-size:0.74rem; border-radius:20px; padding:0.5rem 0.9rem; cursor:pointer; }
+  .laser-toggle.active{ border-color:var(--gold); color:var(--gold); }
+  .laser-dot{ position:fixed; width:18px; height:18px; border-radius:50%; background:radial-gradient(circle, #FFF6C9 0%, #FFD867 55%, rgba(255,216,103,0) 75%); pointer-events:none; z-index:999; display:none; transform:translate(-50%,-50%); }
+  @media print{ .laser-toggle, .laser-dot{ display:none !important; } }
+
+  /* ---------- Modals (glitch / confirm) ---------- */
+  .modal-overlay{ position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; background:rgba(5,5,10,0.85); }
+  .modal-overlay.show{ display:flex; }
+  .modal-card{ background:#0A0A12; border:2px solid #39FF88; border-radius:12px; padding:1.6rem 1.5rem; max-width:380px; width:88%; font-family:var(--font-mono); color:#39FF88; text-align:center; box-shadow:0 0 30px rgba(57,255,136,0.4); }
+  .modal-card.plain{ border-color:var(--gold); color:#fff; }
+  .glitch-card{ animation: glitchShake 0.15s linear infinite; }
+  @keyframes glitchShake{ 0%{transform:translate(0,0);} 20%{transform:translate(-1px,1px);} 40%{transform:translate(1px,-1px);} 60%{transform:translate(-1px,-1px);} 80%{transform:translate(1px,1px);} 100%{transform:translate(0,0);} }
+  .modal-title{ font-size:1rem; font-weight:700; margin-bottom:0.8rem; letter-spacing:0.05em; }
+  .modal-body{ font-size:0.8rem; line-height:1.6; margin-bottom:1.2rem; }
+  .modal-actions{ display:flex; flex-direction:column; gap:0.6rem; }
+  .modal-btn{ font-family:var(--font-mono); font-size:0.82rem; padding:0.6rem 0.9rem; border-radius:8px; cursor:pointer; font-weight:700; border:1px solid; background:transparent; }
+  .modal-btn.primary{ background:#39FF88; color:#0A0A12; border-color:#39FF88; }
+  .modal-btn.ghost{ color:#8FA0A8; border-color:#3A4048; }
+  .reset-flash{ position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:11; }
+  .reset-flash.play{ animation: flashOut 0.6s ease-out forwards; }
+  @keyframes flashOut{ 0%{opacity:0.95;} 100%{opacity:0;} }
+  .toast{ position:fixed; bottom:calc(var(--toolbar-h) + 12px); left:50%; transform:translateX(-50%) translateY(20px); z-index:41; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:0.7rem 1.1rem; font-family:var(--font-mono); font-size:0.76rem; opacity:0; transition:opacity 0.3s, transform 0.3s; text-align:center; max-width:85%; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .footer-row{ display:flex; justify-content:center; margin-top:1.4rem; }
+  .reset-link{ font-family:var(--font-mono); font-size:0.72rem; opacity:0.55; background:none; border:none; color:#fff; text-decoration:underline; cursor:pointer; }
+
+  /* ---------- Gaps report ---------- */
+  .gaps-header{ text-align:center; margin-bottom:1.2rem; }
+  .gaps-header h2{ font-size:1.4rem; }
+  .gap-card{ background:var(--panel); border:1.5px solid var(--coral); border-radius:14px; padding:1.2rem 1.3rem; margin-bottom:1.1rem; }
+  .gap-card.solid{ border-color:#39FF88; }
+  .gap-skill{ font-family:var(--font-display); font-weight:800; font-size:1.02rem; margin-bottom:0.5rem; }
+  .gap-def{ font-size:0.9rem; line-height:1.6; margin-bottom:0.8rem; opacity:0.9; }
+  .gap-example .sol-title{ font-family:var(--font-mono); font-size:0.7rem; opacity:0.65; text-transform:uppercase; margin-bottom:0.4rem; }
+  .gap-example .step{ font-family:var(--font-mono); font-size:0.86rem; padding:0.18rem 0; }
+  .gap-pointer{ font-family:var(--font-mono); font-size:0.76rem; opacity:0.65; margin-top:0.8rem; }
+  .gap-practice{ margin-top:0.9rem; padding-top:0.9rem; border-top:1px dashed var(--line); }
+  .solid-chip{ display:inline-block; background:rgba(57,255,136,0.15); color:#39FF88; border:1px solid #39FF88; border-radius:8px; padding:0.3rem 0.7rem; font-family:var(--font-mono); font-size:0.76rem; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ================= INTRO SCREEN ================= -->
+  <div class="screen active" id="screenIntro">
+    <div class="intro-card">
+      <h1>🏰 Castle Builder</h1>
+      <p>Linear Functions — Part 1B<br>Every question adds ONE block to your castle. Get it right first try → <strong>Gold</strong>. Right on 2nd try → <strong>Stone</strong>. Miss it twice → <strong>Wood</strong>.<br>19 questions on functions, forming equations from words, and the equation of a line.</p>
+      <div class="intro-field">
+        <label>Your name</label>
+        <input type="text" id="studentNameInput" placeholder="e.g. Aisyah">
+      </div>
+      <div class="intro-field">
+        <label>Session code (optional — ask your teacher)</label>
+        <input type="text" id="sessionCodeInput" placeholder="e.g. 483920" inputmode="numeric">
+      </div>
+      <button class="start-btn" id="startBtn">Start Building 🧱</button>
+    </div>
+  </div>
+
+  <!-- ================= GAME SCREEN ================= -->
+  <div class="screen" id="screenGame">
+    <div class="top-bar">
+      <span id="qCounterLabel">Question 1 / 19</span>
+      <span id="topRankHint"></span>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="sun"></div>
+      <div class="cloud1"></div>
+      <div class="rank-banner" id="rankBanner"></div>
+      <div class="castle-grid" id="castleGrid"></div>
+      <div class="ground"></div>
+      <div class="reset-flash" id="resetFlash"></div>
+    </div>
+
+    <div class="overall-bar-wrap">
+      <div class="overall-label"><span>Blocks placed</span><span id="overallPct">0 / 19</span></div>
+      <div class="overall-track"><div class="overall-fill" id="overallFill"></div></div>
+    </div>
+
+    <div class="question-card" id="questionCard">
+      <div class="q-skill-tag" id="qSkillTag"></div>
+      <div class="q-prompt" id="qPrompt"></div>
+      <div class="q-diagram" id="qDiagram" style="display:none;"></div>
+      <div id="qBody"></div>
+      <div class="hint-box" id="hintBox"></div>
+      <div class="help-msg" id="helpMsg"></div>
+      <div class="solution-box" id="solutionBox"></div>
+      <div class="feedback-line" id="feedbackLine"></div>
+      <button class="q-submit-btn" id="submitBtn">Submit</button>
+      <button class="continue-btn" id="continueBtn">Continue →</button>
+    </div>
+
+    <div class="footer-row"><button class="reset-link" id="resetLink">↺ Reset my progress</button></div>
+  </div>
+
+  <!-- ================= GAPS REPORT SCREEN ================= -->
+  <div class="screen" id="screenGaps">
+    <div class="gaps-header">
+      <h2>📊 Your Learning Gaps Report</h2>
+      <p style="font-family:var(--font-mono); font-size:0.8rem; opacity:0.7; margin-top:0.5rem;">Here's a skill-by-skill breakdown of your castle build.</p>
+    </div>
+    <div id="gapsContainer"></div>
+  </div>
+
+</div>
+
+<!-- Math toolbar (always present) -->
+<div class="math-toolbar" id="mathToolbar"></div>
+
+<!-- Laser -->
+<button class="laser-toggle" id="laserToggle">🔴 Laser</button>
+<div class="laser-dot" id="laserDot"></div>
+
+<!-- Glitch modal -->
+<div class="modal-overlay" id="glitchOverlay">
+  <div class="modal-card glitch-card">
+    <div class="modal-title">⚠️ SYSTEM GLITCH DETECTED</div>
+    <div class="modal-body">A cheat code just appeared out of nowhere...<br><strong>"UNLOCK_ALL_RESOURCES"</strong><br><br>Use it to instantly finish your castle?</div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" id="cheatBtn">⚡ Use the cheat code</button>
+      <button class="modal-btn ghost" id="ignoreBtn">🚫 Ignore it — keep building properly</button>
+    </div>
+  </div>
+</div>
+
+<!-- Resume modal -->
+<div class="modal-overlay" id="resumeOverlay">
+  <div class="modal-card plain">
+    <div class="modal-title">👋 Welcome back!</div>
+    <div class="modal-body" id="resumeBody">Looks like you were partway through building your castle. Want to continue where you left off?</div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" id="resumeContinueBtn">Continue building</button>
+      <button class="modal-btn ghost" id="resumeRestartBtn">Start over</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset confirm modal -->
+<div class="modal-overlay" id="resetOverlay">
+  <div class="modal-card plain">
+    <div class="modal-title">↺ Reset your progress?</div>
+    <div class="modal-body">This will clear your whole castle and start Question 1 again. This can't be undone.</div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" id="resetConfirmBtn">Yes, reset everything</button>
+      <button class="modal-btn ghost" id="resetCancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   CONFIG — Class Tracker backend
+   ========================================================= */
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwOTnxDgZMP840v1oe101j0wuJj42qXyEVm7p2l-7xvjCR3MEoyjMPOEa3x9MuRwExK7w/exec'; // shared Chapter 11 Class Tracker backend
+const GAME_STORAGE_KEY = 'castleBuilderPart1B_progress_v1';
+
+/* =========================================================
+   SKILLS (for Learning Gaps report + reteach content)
+   ========================================================= */
+const SKILLS = {
+  func: {
+    label: 'Functions',
+    definition: 'A function is a rule that takes an input (x) and gives exactly ONE output. We write it as f(x). To evaluate f(x) at a given value, substitute that value in place of x and simplify.',
+    example: [
+      'f(x) = 3x + 2, find f(5)',
+      'f(5) = 3(5) + 2',
+      'f(5) = 15 + 2',
+      'f(5) = 17'
+    ],
+    practice: { prompt: 'f(x) = 4x − 1. Find f(2).', accept: ['7'], hint: 'Substitute x = 2 into 4x − 1. What is 4 × 2 first?' },
+    deckPointer: 'Revisit Learning Deck Part 1B, Section 1: Functions'
+  },
+  stmteq: {
+    label: 'Forming Equations from Words',
+    definition: 'To turn a word problem into an equation: find the starting/fixed amount (this becomes the constant, c) and the amount that changes per unit (this becomes the rate, m). Then write it as (changing quantity) = m × (unit) + c.',
+    example: [
+      '"A parking fee is $2 flat, plus $1 per hour (h hours)"',
+      'Fixed amount → c = 2',
+      'Rate per hour → m = 1',
+      'Equation: Cost = 1h + 2'
+    ],
+    practice: { prompt: '"A printer starts with 200 sheets of paper and uses 5 sheets per page printed (p pages)." Write an equation for sheets remaining, S.', accept: ['s=200-5p'], hint: 'What is the starting (fixed) amount? What happens to it as p increases?' },
+    deckPointer: 'Revisit Learning Deck Part 1B, Section 2: Forming Equations'
+  },
+  linear: {
+    label: 'Equation of a Line (y = mx + c)',
+    definition: 'In y = mx + c, m is the gradient (steepness) and c is the y-intercept (where the line crosses the y-axis). To find the equation from two points, first find m using the gradient formula, then substitute one point to solve for c.',
+    example: [
+      'Line through (0, 3) and (2, 7)',
+      'm = (7 − 3) ÷ (2 − 0) = 2',
+      'Using (0, 3): c = 3',
+      'Equation: y = 2x + 3'
+    ],
+    practice: { prompt: 'A line passes through (0, 1) with gradient 4. Write its equation.', accept: ['y=4x+1'], hint: 'You already have the y-intercept — it\'s the point where x = 0. What is m here?' },
+    deckPointer: 'Revisit Learning Deck Part 1B, Section 3: Equation of a Line'
+  }
+};
+
+/* =========================================================
+   QUESTIONS (19 total — matches 19 castle blocks)
+   ========================================================= */
+function norm(s){ return String(s).replace(/\s+/g,'').toLowerCase(); }
+
+const QUESTIONS = [
+  { id:1, skill:'func', type:'input', prompt:'Given f(x) = 2x + 3, find f(4).',
+    placeholder:'e.g. 9', accept:['11'],
+    hint:'Substitute x = 4 into 2x + 3. What is 2 × 4 first?',
+    solution:['f(x) = 2x + 3','f(4) = 2(4) + 3','f(4) = 8 + 3','f(4) = 11'] },
+
+  { id:2, skill:'func', type:'input', prompt:'Given f(x) = 5x − 1, find f(0).',
+    placeholder:'e.g. 4', accept:['-1'],
+    hint:'What happens to 5x when x = 0?',
+    solution:['f(x) = 5x − 1','f(0) = 5(0) − 1','f(0) = 0 − 1','f(0) = −1'] },
+
+  { id:3, skill:'func', type:'mcq', prompt:'Given f(x) = 4x − 5, find f(3).',
+    options:[ {text:'f(3) = 7', correct:true}, {text:'f(3) = 12', correct:false}, {text:'f(3) = 17', correct:false}, {text:'f(3) = 2', correct:false} ],
+    hint:'Substitute x = 3 into 4x − 5. Work out 4 × 3 first, then subtract 5.',
+    solution:['f(x) = 4x − 5','f(3) = 4(3) − 5','f(3) = 12 − 5','f(3) = 7'] },
+
+  { id:4, skill:'func', type:'input', prompt:'Given f(x) = x² − 2, find f(4).',
+    placeholder:'e.g. 10', accept:['14'],
+    hint:'Work out 4² first, then subtract 2.',
+    solution:['f(x) = x² − 2','f(4) = (4)² − 2','f(4) = 16 − 2','f(4) = 14'] },
+
+  { id:5, skill:'func', type:'mcq', thinking:true, prompt:'💭 Think: Why does a function give only ONE output for each input?',
+    options:[
+      {text:'Because a function is a rule where each input maps to exactly one output', correct:true},
+      {text:'Because inputs must always be positive numbers', correct:false},
+      {text:'Because functions can only use whole numbers', correct:false},
+      {text:'Because the output must be bigger than the input', correct:false}
+    ],
+    hint:'Think about the definition of "function" itself — what makes it different from any random rule?',
+    solution:['A function is defined so that every input has exactly one matching output.','This is what makes f(x) predictable and useful — you always know what you\'ll get.'] },
+
+  { id:6, skill:'func', type:'input', prompt:'If f(2) = 9 and f(x) = mx + 3, find m.',
+    placeholder:'e.g. 2', accept:['3','m=3'],
+    hint:'Substitute x = 2 into mx + 3 and set it equal to 9. What equation does that give you?',
+    solution:['f(x) = mx + 3','f(2) = m(2) + 3 = 9','2m + 3 = 9','2m = 6','m = 3'] },
+
+  { id:7, skill:'stmteq', type:'input', prompt:'"A taxi charges $3 flat fee plus $2 per km (d km)." Write the equation for cost C in terms of d.',
+    placeholder:'e.g. C = 5d', accept:['c=2d+3','c=3+2d'],
+    hint:'Which part is the fixed/starting amount (c)? Which part changes with distance (m)?',
+    solution:['Fixed fee → c = 3','Rate per km → m = 2','C = 2d + 3'] },
+
+  { id:8, skill:'stmteq', type:'input', prompt:'"A tank starts with 50 L and drains 4 L per minute (t minutes)." Write the equation for volume V in terms of t.',
+    placeholder:'e.g. V = 10t', accept:['v=50-4t'],
+    hint:'The tank is draining, so the volume decreases. Should the rate be positive or negative?',
+    solution:['Starting amount → c = 50','Draining 4 L/min → m = −4','V = 50 − 4t'] },
+
+  { id:9, skill:'stmteq', type:'mcq', prompt:'Which expression means "5 more than twice a number x"?',
+    options:[ {text:'2x + 5', correct:true}, {text:'5x + 2', correct:false}, {text:'2(x + 5)', correct:false}, {text:'x + 7', correct:false} ],
+    hint:'"Twice a number x" comes first — write that part, then add 5 more to it.',
+    solution:['"Twice a number x" = 2x','"5 more than" that = 2x + 5'] },
+
+  { id:10, skill:'stmteq', type:'mcq', prompt:'"A phone plan costs $20 plus $0.10 per minute used (m minutes)." Which equation matches?',
+    options:[ {text:'C = 20 + 0.10m', correct:true}, {text:'C = 0.10 + 20m', correct:false}, {text:'C = 20m + 0.10', correct:false}, {text:'C = (20 + 0.10)m', correct:false} ],
+    hint:'Which number stays the same no matter how many minutes are used — the $20 or the $0.10?',
+    solution:['Fixed cost → c = 20','Rate per minute → m = 0.10','C = 20 + 0.10m'] },
+
+  { id:11, skill:'stmteq', type:'mcq', thinking:true, prompt:'💭 Think: How do you decide which quantity is the constant (c) and which is the rate (m) in a word problem?',
+    options:[
+      {text:'The constant is the amount that doesn\'t change; the rate is the amount that changes per unit', correct:true},
+      {text:'The constant is always the bigger number', correct:false},
+      {text:'The rate is always the first number mentioned in the sentence', correct:false},
+      {text:'The constant is the amount per unit, and the rate is the starting amount', correct:false}
+    ],
+    hint:'Look for the phrase "per" — that usually signals which value is changing.',
+    solution:['The constant (c) is the fixed starting value — it doesn\'t depend on how many units.','The rate (m) is attached to a "per unit" phrase — it multiplies the changing quantity.'] },
+
+  { id:12, skill:'stmteq', type:'input', prompt:'"Starting height 2 m, grows 0.5 m per year (y years)." Write H in terms of y.',
+    placeholder:'e.g. H = 1.5y', accept:['h=2+0.5y','h=0.5y+2'],
+    hint:'What is the starting height when y = 0? That\'s your constant.',
+    solution:['Starting height → c = 2','Growth rate → m = 0.5','H = 2 + 0.5y'] },
+
+  { id:13, skill:'stmteq', type:'input', prompt:'"A gym membership costs $80 to join, then $15 per month (m months)." Write the total cost C in terms of m.',
+    placeholder:'e.g. C = 95m', accept:['c=80+15m','c=15m+80'],
+    hint:'The joining fee is paid once — is that the constant or the rate?',
+    solution:['Joining fee → c = 80','Monthly rate → m = 15','C = 80 + 15m'] },
+
+  { id:14, skill:'linear', type:'multi', prompt:'State the gradient (m) and y-intercept (c) of y = 3x − 7.',
+    fields:[ {label:'Gradient (m)', placeholder:'e.g. 5', accept:['3']}, {label:'Y-intercept (c)', placeholder:'e.g. -2', accept:['-7']} ],
+    hint:'In y = mx + c, m is the number multiplying x, and c is the number on its own.',
+    solution:['y = 3x − 7 is already in the form y = mx + c','Compare: m = 3','Compare: c = −7'] },
+
+  { id:15, skill:'linear', type:'input', prompt:'A line passes through (0, 4) with gradient 2. Write its equation.',
+    placeholder:'e.g. y = 3x + 1', accept:['y=2x+4'],
+    hint:'(0, 4) tells you the y-intercept directly — what is c?',
+    solution:['Gradient given → m = 2','Point (0, 4) is on the y-axis → c = 4','y = 2x + 4'] },
+
+  { id:16, skill:'linear', type:'mcq', prompt:'Which equation has the steeper gradient: y = 2x + 1 or y = 5x − 3?',
+    options:[ {text:'y = 2x + 1', correct:false}, {text:'y = 5x − 3', correct:true}, {text:'Both are equally steep', correct:false}, {text:'Cannot be determined', correct:false} ],
+    hint:'Compare the values of m in each equation. A bigger m means a steeper line.',
+    solution:['y = 2x + 1 has m = 2','y = 5x − 3 has m = 5','5 > 2, so y = 5x − 3 is steeper'] },
+
+  { id:17, skill:'linear', type:'input', prompt:'A line passes through (1, 5) and (2, 8). Find its equation.',
+    placeholder:'e.g. y = x + 4', accept:['y=3x+2'],
+    hint:'First find the gradient using the two points, then substitute one point to find c.',
+    solution:['m = (8 − 5) ÷ (2 − 1)','m = 3 ÷ 1 = 3','Using (1, 5): 5 = 3(1) + c','c = 2','y = 3x + 2'] },
+
+  { id:18, skill:'linear', type:'input', prompt:'The graph shows a straight line. Read off m and c from the diagram, then state the equation.',
+    diagram: true,
+    placeholder:'e.g. y = 2x + 3', accept:['y=x+2','y=1x+2'],
+    hint:'Where does the line cross the y-axis? That\'s c. Then count how much y goes up for every 1 step right — that\'s m.',
+    solution:['Line crosses y-axis at (0, 2) → c = 2','Line rises 1 unit for every 1 unit across → m = 1','y = x + 2'] },
+
+  { id:19, skill:'linear', type:'mcq', thinking:true, prompt:'💭 Think: What does it mean for a point to "lie on" a line y = mx + c?',
+    options:[
+      {text:'The point\'s coordinates satisfy the equation when substituted in', correct:true},
+      {text:'The point must be at the origin', correct:false},
+      {text:'The point must have a positive x-coordinate', correct:false},
+      {text:'The line must cross the y-axis at that exact point', correct:false}
+    ],
+    hint:'Try substituting a point\'s x and y values into the equation — what should happen if it lies on the line?',
+    solution:['If a point (x, y) lies on the line, substituting its x and y into y = mx + c makes the equation true (LHS = RHS).'] }
+];
+
+const TOTAL = QUESTIONS.length; // 19
+
+/* =========================================================
+   CASTLE GRID SETUP
+   ========================================================= */
+const rows = [
+  [1,0,0,0,0,0,1],
+  [1,1,0,0,0,1,1],
+  [1,1,1,0,1,1,1],
+  [1,1,1,1,1,1,1],
+];
+const DOOR_ROW = 3, DOOR_COL = 3;
+const grid = document.getElementById('castleGrid');
+const gridCellsByPos = {};
+rows.forEach((row, rIdx) => {
+  row.forEach((v, cIdx) => {
+    const div = document.createElement('div');
+    if (v === 1) {
+      div.className = 'cell empty';
+      gridCellsByPos[rIdx + ',' + cIdx] = { el: div, row: rIdx, col: cIdx, filled: false };
+    } else {
+      div.className = 'cell';
+      div.style.visibility = 'hidden';
+    }
+    grid.appendChild(div);
+  });
+});
+const buildQueue = [];
+for (let r = rows.length - 1; r >= 0; r--) {
+  for (let c = 0; c < rows[r].length; c++) {
+    const key = r + ',' + c;
+    if (gridCellsByPos[key]) buildQueue.push(gridCellsByPos[key]);
+  }
+}
+
+/* =========================================================
+   STATE
+   ========================================================= */
+let state = {
+  studentName: '', sessionCode: '',
+  qIndex: 0, attemptsThisQ: 0, seenSolutionThisQ: false,
+  tally: {}, // qId -> {skill, attempts, correct(bool), tier}
+  have: { gold: 0, stone: 0, wood: 0 },
+  placed: 0, glitchShown: false, finished: false
+};
+let currentMcqOrder = null; // shuffled options for current question, kept stable across attempts
+
+function saveState(){
+  try{ localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(GAME_STORAGE_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+
+/* =========================================================
+   TOAST / GLITCH / MODALS
+   ========================================================= */
+function showToast(msg, ms){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), ms || 2600);
+}
+function showModal(id){ document.getElementById(id).classList.add('show'); }
+function hideModal(id){ document.getElementById(id).classList.remove('show'); }
+
+document.getElementById('cheatBtn').addEventListener('click', () => {
+  hideModal('glitchOverlay');
+  while (state.placed < TOTAL) { placeBlockSilently('gold'); }
+  updateProgressUI();
+  setTimeout(() => {
+    const flash = document.getElementById('resetFlash');
+    flash.classList.add('play');
+    setTimeout(() => {
+      flash.classList.remove('play');
+      hardResetToQuestion1();
+      showToast("Cheats always cost something — your whole castle just got reset. Let's build it properly this time.", 4200);
+    }, 350);
+  }, 500);
+});
+document.getElementById('ignoreBtn').addEventListener('click', () => {
+  hideModal('glitchOverlay');
+  showToast("Good call — that glitch wasn't worth the risk. Keep building!", 2800);
+});
+
+/* =========================================================
+   MATH TOOLBAR
+   ========================================================= */
+const TOOLBAR_SYMBOLS = ['+','−','×','÷','=','x','y','x²','√','π','θ','°','∠','≤','≥','≠','∞','Δ','α','β','γ','Σ','∫','sin','cos','tan','∈','∉','∪','∩'];
+const toolbarEl = document.getElementById('mathToolbar');
+TOOLBAR_SYMBOLS.forEach(sym => {
+  const btn = document.createElement('button');
+  btn.textContent = sym;
+  btn.type = 'button';
+  btn.addEventListener('click', () => {
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT')) {
+      const start = active.selectionStart || active.value.length;
+      const end = active.selectionEnd || active.value.length;
+      active.value = active.value.slice(0, start) + sym + active.value.slice(end);
+      active.focus();
+      active.selectionStart = active.selectionEnd = start + sym.length;
+    }
+  });
+  toolbarEl.appendChild(btn);
+});
+
+/* =========================================================
+   LASER POINTER
+   ========================================================= */
+let laserActive = false;
+const laserDot = document.getElementById('laserDot');
+document.getElementById('laserToggle').addEventListener('click', function(){
+  laserActive = !laserActive;
+  this.classList.toggle('active', laserActive);
+  laserDot.style.display = laserActive ? 'block' : 'none';
+});
+function moveLaser(x, y){
+  if(!laserActive) return;
+  laserDot.style.left = x + 'px';
+  laserDot.style.top = y + 'px';
+}
+document.addEventListener('mousemove', (e) => { if(laserActive){ e.preventDefault(); moveLaser(e.clientX, e.clientY); } });
+document.addEventListener('touchmove', (e) => {
+  if(laserActive && e.touches && e.touches[0]){
+    e.preventDefault();
+    moveLaser(e.touches[0].clientX, e.touches[0].clientY);
+  }
+}, { passive:false });
+
+/* =========================================================
+   CLASS TRACKER LOGGING
+   ========================================================= */
+const GAME_NAME = 'Castle Builder Part 1B';
+function logAttempt(q, attemptsUsed, correct){
+  if(!BACKEND_URL || BACKEND_URL.indexOf('PASTE_YOUR') === 0) return; // not configured yet
+  const payload = {
+    action: 'log',
+    session: state.sessionCode || '',
+    student: state.studentName || 'Unknown',
+    game: GAME_NAME,
+    round: 'Q' + q.id,
+    skill: q.skill,
+    attempts: attemptsUsed,
+    correct: !!correct
+  };
+  try{
+    fetch(BACKEND_URL, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(payload) }).catch(()=>{});
+  }catch(e){}
+}
+function logTimeout(q){
+  if(!BACKEND_URL || BACKEND_URL.indexOf('PASTE_YOUR') === 0) return;
+  const payload = {
+    action:'log', session: state.sessionCode || '', student: state.studentName || 'Unknown',
+    game: GAME_NAME, round: 'Q' + q.id, skill: q.skill, attempts: 'Timed out', correct:false
+  };
+  try{ fetch(BACKEND_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) }).catch(()=>{}); }catch(e){}
+}
+
+/* =========================================================
+   CASTLE BLOCK PLACEMENT
+   ========================================================= */
+function placeBlockSilently(tier){
+  if (state.placed >= TOTAL) return;
+  const cell = buildQueue[state.placed];
+  cell.filled = true;
+  cell.el.classList.remove('empty');
+  cell.el.classList.add('filled', tier);
+  if (cell.row === DOOR_ROW && cell.col === DOOR_COL) {
+    const door = document.createElement('div');
+    door.className = 'door';
+    cell.el.appendChild(door);
+  }
+  state.have[tier]++;
+  state.placed++;
+}
+function updateProgressUI(){
+  document.getElementById('overallPct').textContent = state.placed + ' / ' + TOTAL;
+  document.getElementById('overallFill').style.width = Math.round(state.placed / TOTAL * 100) + '%';
+}
+function tierRank(){
+  const score = state.have.gold * 2 + state.have.stone * 1;
+  const pct = score / (TOTAL * 2);
+  if (pct >= 0.66) return 'gold';
+  if (pct >= 0.33) return 'stone';
+  return 'wood';
+}
+function spawnSparkles(count){
+  const stage = document.getElementById('stage');
+  const stageRect = stage.getBoundingClientRect();
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const s = document.createElement('div');
+      s.className = 'sparkle';
+      s.textContent = ['✨','⭐','💫'][Math.floor(Math.random() * 3)];
+      s.style.left = (30 + Math.random() * (stageRect.width - 60)) + 'px';
+      s.style.top = (50 + Math.random() * 120) + 'px';
+      stage.appendChild(s);
+      s.classList.add('play');
+      setTimeout(() => s.remove(), 1500);
+    }, i * 140);
+  }
+}
+function finishCastle(){
+  state.finished = true;
+  saveState();
+  const rank = tierRank();
+  const stage = document.getElementById('stage');
+  const topCell = gridCellsByPos['0,0'];
+  const rect = topCell.el.getBoundingClientRect();
+  const stageRect = stage.getBoundingClientRect();
+  const mountLeft = rect.left - stageRect.left + rect.width / 2 - 2;
+  const mountTop = rect.top - stageRect.top - 30;
+
+  const pole = document.createElement('div');
+  pole.className = 'flag-pole';
+  pole.style.left = mountLeft + 'px';
+  pole.style.top = mountTop + 'px';
+  pole.style.height = '30px';
+  stage.appendChild(pole);
+
+  const flag = document.createElement('div');
+  flag.style.position = 'absolute';
+  flag.style.left = (mountLeft + 2) + 'px';
+  flag.style.top = mountTop + 'px';
+  if (rank === 'gold') {
+    flag.className = 'flag flag-gold';
+    stage.appendChild(flag);
+    const crest = document.createElement('div');
+    crest.className = 'flag-gold-crest';
+    crest.textContent = '👑';
+    flag.appendChild(crest);
+    setTimeout(() => { flag.classList.add('show'); crest.classList.add('show'); }, 50);
+    spawnSparkles(10);
+  } else if (rank === 'stone') {
+    flag.className = 'flag flag-stone';
+    stage.appendChild(flag);
+    setTimeout(() => flag.classList.add('show'), 50);
+    spawnSparkles(3);
+  } else {
+    flag.className = 'flag flag-wood';
+    stage.appendChild(flag);
+    setTimeout(() => flag.classList.add('show'), 50);
+  }
+
+  const banner = document.getElementById('rankBanner');
+  banner.className = 'rank-banner ' + rank;
+  const labels = { gold: '👑 LEGENDARY BUILD — Gold Castle!', stone: '🥈 SOLID BUILD — Stone Castle!', wood: '🥉 CASTLE COMPLETE — Wooden Castle' };
+  banner.textContent = labels[rank];
+  setTimeout(() => banner.classList.add('show'), 100);
+
+  const card = document.getElementById('questionCard');
+  card.innerHTML = '<div class="q-prompt">🎉 Your castle is complete!</div><div style="font-family:var(--font-mono); font-size:0.85rem; opacity:0.8; margin-bottom:1rem;">Gold blocks: ' + state.have.gold + ' · Stone blocks: ' + state.have.stone + ' · Wood blocks: ' + state.have.wood + '</div><button class="q-submit-btn" id="viewGapsBtn">View my Learning Gaps report →</button>';
+  document.getElementById('viewGapsBtn').addEventListener('click', renderGapsReport);
+}
+
+/* =========================================================
+   DIAGRAM (Q18 — line graph)
+   ========================================================= */
+function lineGraphSVG(){
+  return '<svg viewBox="0 0 260 260" width="240" height="240">' +
+    '<line x1="20" y1="220" x2="240" y2="220" stroke="#fff" stroke-opacity="0.4" stroke-width="1.5"/>' +
+    '<line x1="40" y1="10" x2="40" y2="240" stroke="#fff" stroke-opacity="0.4" stroke-width="1.5"/>' +
+    [0,1,2,3,4,5,6].map(i => '<line x1="'+(40+i*33)+'" y1="10" x2="'+(40+i*33)+'" y2="220" stroke="#fff" stroke-opacity="0.08"/>').join('') +
+    [0,1,2,3,4,5,6].map(i => '<line x1="20" y1="'+(220-i*33)+'" x2="240" y2="'+(220-i*33)+'" stroke="#fff" stroke-opacity="0.08"/>').join('') +
+    '<text x="238" y="234" font-size="10" fill="#fff" opacity="0.6" text-anchor="end">x</text>' +
+    '<text x="30" y="18" font-size="10" fill="#fff" opacity="0.6">y</text>' +
+    [0,2,4,6].map(i => '<text x="'+(40+i*33)+'" y="234" font-size="9" fill="#fff" opacity="0.55" text-anchor="middle">'+i+'</text>').join('') +
+    [0,2,4,6].map(i => '<text x="30" y="'+(224-i*33)+'" font-size="9" fill="#fff" opacity="0.55" text-anchor="end">'+i+'</text>').join('') +
+    '<line x1="40" y1="187" x2="205" y2="22" stroke="#FFC93C" stroke-width="3" stroke-linecap="round"/>' +
+    '<circle cx="40" cy="187" r="5" fill="#39FF88"/>' +
+    '<circle cx="106" cy="121" r="5" fill="#39FF88"/>' +
+    '<text x="46" y="180" font-size="10" fill="#39FF88">(0, 2)</text>' +
+    '<text x="112" y="114" font-size="10" fill="#39FF88">(2, 4)</text>' +
+    '</svg>';
+}
+
+/* =========================================================
+   QUESTION RENDERING
+   ========================================================= */
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+function renderQuestion(){
+  const q = QUESTIONS[state.qIndex];
+  document.getElementById('qCounterLabel').textContent = 'Question ' + (state.qIndex + 1) + ' / ' + TOTAL;
+  document.getElementById('qSkillTag').innerHTML = SKILLS[q.skill].label + (q.thinking ? '<span class="q-think-badge">💭 Think</span>' : '');
+  document.getElementById('qPrompt').textContent = q.prompt;
+
+  const diagBox = document.getElementById('qDiagram');
+  if (q.diagram) { diagBox.style.display = 'flex'; diagBox.innerHTML = lineGraphSVG(); }
+  else { diagBox.style.display = 'none'; diagBox.innerHTML = ''; }
+
+  const body = document.getElementById('qBody');
+  body.innerHTML = '';
+
+  if (q.type === 'mcq') {
+    currentMcqOrder = shuffle(q.options);
+    const optWrap = document.createElement('div');
+    optWrap.className = 'q-options';
+    currentMcqOrder.forEach((opt, i) => {
+      const b = document.createElement('button');
+      b.className = 'q-option';
+      b.type = 'button';
+      b.textContent = opt.text;
+      b.dataset.idx = i;
+      b.addEventListener('click', () => { selectMcqOption(i); });
+      optWrap.appendChild(b);
+    });
+    body.appendChild(optWrap);
+    document.getElementById('submitBtn').style.display = 'none'; // MCQ submits on click
+  } else if (q.type === 'multi') {
+    const row = document.createElement('div');
+    row.className = 'q-input-row';
+    q.fields.forEach((f, i) => {
+      const field = document.createElement('div');
+      field.className = 'q-input-field';
+      field.innerHTML = '<label>' + f.label + '</label>';
+      const inp = document.createElement('input');
+      inp.className = 'q-input'; inp.type = 'text'; inp.placeholder = f.placeholder; inp.dataset.fieldIdx = i;
+      field.appendChild(inp);
+      row.appendChild(field);
+    });
+    body.appendChild(row);
+    document.getElementById('submitBtn').style.display = 'inline-block';
+  } else {
+    const row = document.createElement('div');
+    row.className = 'q-input-row';
+    const inp = document.createElement('input');
+    inp.className = 'q-input'; inp.type = 'text'; inp.placeholder = q.placeholder; inp.id = 'singleInput';
+    row.appendChild(inp);
+    body.appendChild(row);
+    document.getElementById('submitBtn').style.display = 'inline-block';
+  }
+
+  document.getElementById('hintBox').classList.remove('show');
+  document.getElementById('helpMsg').classList.remove('show');
+  document.getElementById('solutionBox').classList.remove('show');
+  document.getElementById('feedbackLine').classList.remove('show');
+  document.getElementById('continueBtn').classList.remove('show');
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('submitBtn').textContent = 'Submit';
+
+  state.attemptsThisQ = 0;
+  state.seenSolutionThisQ = false;
+}
+
+function selectMcqOption(i){
+  const q = QUESTIONS[state.qIndex];
+  const opt = currentMcqOrder[i];
+  evaluateAnswer(q, opt.correct, i);
+}
+
+document.getElementById('submitBtn').addEventListener('click', () => {
+  const q = QUESTIONS[state.qIndex];
+  if (q.type === 'multi') {
+    let allCorrect = true;
+    q.fields.forEach((f, i) => {
+      const inp = document.querySelector('[data-field-idx="' + i + '"]');
+      if (!f.accept.includes(norm(inp.value))) allCorrect = false;
+    });
+    evaluateAnswer(q, allCorrect);
+  } else {
+    const inp = document.getElementById('singleInput');
+    const correct = q.accept.includes(norm(inp.value));
+    evaluateAnswer(q, correct);
+  }
+});
+
+function evaluateAnswer(q, correct, mcqIdx){
+  if (state.seenSolutionThisQ) return; // practice re-attempt after solution, doesn't affect scoring
+  state.attemptsThisQ++;
+
+  if (q.type === 'mcq' && typeof mcqIdx === 'number') {
+    const btns = document.querySelectorAll('.q-option');
+    btns.forEach(b => b.classList.add('locked'));
+    btns[mcqIdx].classList.add(correct ? 'correct' : 'wrong');
+    if (!correct) {
+      currentMcqOrder.forEach((opt, i) => { if (opt.correct) btns[i].classList.add('correct'); });
+    }
+  }
+
+  if (correct) {
+    const tier = state.attemptsThisQ === 1 ? 'gold' : 'stone';
+    finishQuestion(q, tier, true);
+  } else if (state.attemptsThisQ === 1) {
+    document.getElementById('hintBox').innerHTML = '<strong>💡 Hint:</strong> ' + q.hint;
+    document.getElementById('hintBox').classList.add('show');
+    document.getElementById('feedbackLine').textContent = 'Not quite — check the hint, then try again.';
+    document.getElementById('feedbackLine').className = 'feedback-line bad show';
+    if (q.type === 'mcq') {
+      // re-enable options for second try
+      document.querySelectorAll('.q-option').forEach(b => { b.classList.remove('locked','correct','wrong'); });
+    }
+  } else {
+    // 2nd attempt also wrong
+    document.getElementById('helpMsg').innerHTML = '🙋 Don\'t worry — try asking a friend or your teacher for a pointer. Here\'s how it\'s done:';
+    document.getElementById('helpMsg').classList.add('show');
+    showSolution(q);
+    document.getElementById('feedbackLine').classList.remove('show');
+    state.seenSolutionThisQ = true;
+    if (q.type === 'mcq') document.querySelectorAll('.q-option').forEach(b => b.classList.remove('locked'));
+    finishQuestion(q, 'wood', false, true);
+  }
+}
+
+function showSolution(q){
+  const box = document.getElementById('solutionBox');
+  box.innerHTML = '<div class="sol-title">Worked solution</div>' + q.solution.map(s => '<div class="step">' + s + '</div>').join('');
+  box.classList.add('show');
+}
+
+function finishQuestion(q, tier, wasCorrect, allowPractice){
+  placeBlockSilently(tier);
+  updateProgressUI();
+  state.tally[q.id] = { skill: q.skill, attempts: state.attemptsThisQ, correct: wasCorrect, tier: tier };
+  logAttempt(q, state.attemptsThisQ, wasCorrect);
+  saveState();
+
+  if (wasCorrect) {
+    document.getElementById('feedbackLine').textContent = tier === 'gold' ? '✨ Correct on the first try — Gold block placed!' : '🪨 Correct — Stone block placed!';
+    document.getElementById('feedbackLine').className = 'feedback-line good show';
+  }
+
+  document.getElementById('submitBtn').disabled = true;
+  if (q.type === 'mcq') document.querySelectorAll('.q-option').forEach(b => b.disabled = true);
+  document.getElementById('continueBtn').classList.add('show');
+
+  if (!state.glitchShown && state.placed >= 5) {
+    state.glitchShown = true;
+    saveState();
+    setTimeout(() => showModal('glitchOverlay'), 500);
+  }
+}
+
+document.getElementById('continueBtn').addEventListener('click', () => {
+  state.qIndex++;
+  saveState();
+  if (state.qIndex >= TOTAL) {
+    finishCastle();
+  } else {
+    renderQuestion();
+  }
+});
+
+/* =========================================================
+   LEARNING GAPS REPORT
+   ========================================================= */
+function renderGapsReport(){
+  document.getElementById('screenGame').classList.remove('active');
+  document.getElementById('screenGaps').classList.add('active');
+  const container = document.getElementById('gapsContainer');
+  container.innerHTML = '';
+
+  Object.keys(SKILLS).forEach(skillKey => {
+    const skill = SKILLS[skillKey];
+    const qsForSkill = Object.entries(state.tally).filter(([id, t]) => t.skill === skillKey);
+    const hasGap = qsForSkill.some(([id, t]) => !t.correct || t.attempts >= 2);
+
+    const card = document.createElement('div');
+    if (hasGap) {
+      card.className = 'gap-card';
+      card.innerHTML =
+        '<div class="gap-skill">' + skill.label + '</div>' +
+        '<div class="gap-def">' + skill.definition + '</div>' +
+        '<div class="gap-example"><div class="sol-title">Fresh worked example</div>' + skill.example.map(s => '<div class="step">' + s + '</div>').join('') + '</div>' +
+        '<div class="gap-practice"><div class="q-prompt" style="font-size:0.95rem;">Low-stakes practice: ' + skill.practice.prompt + '</div>' +
+        '<div class="q-input-row"><input type="text" class="q-input gap-practice-input" data-skill="' + skillKey + '" placeholder="Your answer"></div>' +
+        '<div class="hint-box" id="gapHint-' + skillKey + '"></div>' +
+        '<button class="q-submit-btn gap-practice-submit" data-skill="' + skillKey + '" style="margin-top:0.7rem;">Check</button>' +
+        '<div class="feedback-line" id="gapFeedback-' + skillKey + '"></div></div>' +
+        '<div class="gap-pointer">📘 ' + skill.deckPointer + '</div>';
+    } else {
+      card.className = 'gap-card solid';
+      card.innerHTML = '<div class="gap-skill">' + skill.label + '</div><span class="solid-chip">✅ Solid work — no gaps here!</span>';
+    }
+    container.appendChild(card);
+  });
+
+  container.querySelectorAll('.gap-practice-submit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const skillKey = btn.dataset.skill;
+      const skill = SKILLS[skillKey];
+      const inp = container.querySelector('.gap-practice-input[data-skill="' + skillKey + '"]');
+      const fb = document.getElementById('gapFeedback-' + skillKey);
+      const hintBox = document.getElementById('gapHint-' + skillKey);
+      if (skill.practice.accept.includes(norm(inp.value))) {
+        fb.textContent = '✅ Correct — nice work!';
+        fb.className = 'feedback-line good show';
+        inp.disabled = true; btn.disabled = true;
+      } else if (!btn.dataset.tried) {
+        btn.dataset.tried = '1';
+        hintBox.innerHTML = '<strong>💡 Hint:</strong> ' + skill.practice.hint;
+        hintBox.classList.add('show');
+        fb.textContent = 'Not quite — check the hint and try once more.';
+        fb.className = 'feedback-line bad show';
+      } else {
+        fb.textContent = 'This is just for practice — no worries either way! Keep going.';
+        fb.className = 'feedback-line bad show';
+        inp.disabled = true; btn.disabled = true;
+      }
+    });
+  });
+}
+
+/* =========================================================
+   RESET
+   ========================================================= */
+function hardResetToQuestion1(){
+  Object.values(gridCellsByPos).forEach(c => { c.filled = false; c.el.className = 'cell empty'; c.el.innerHTML = ''; });
+  document.querySelectorAll('.flag, .flag-pole').forEach(el => el.remove());
+  document.getElementById('rankBanner').classList.remove('show');
+  state.qIndex = 0; state.have = { gold:0, stone:0, wood:0 }; state.placed = 0; state.glitchShown = false; state.tally = {}; state.finished = false;
+  saveState();
+  updateProgressUI();
+  renderQuestion();
+}
+document.getElementById('resetLink').addEventListener('click', () => showModal('resetOverlay'));
+document.getElementById('resetCancelBtn').addEventListener('click', () => hideModal('resetOverlay'));
+document.getElementById('resetConfirmBtn').addEventListener('click', () => { hideModal('resetOverlay'); hardResetToQuestion1(); });
+
+/* =========================================================
+   REPLAY SAVED PROGRESS (for resume)
+   ========================================================= */
+function replaySavedBlocks(saved){
+  const order = Object.keys(saved.tally).map(k => saved.tally[k]);
+  order.forEach(t => placeBlockSilently(t.tier));
+}
+
+/* =========================================================
+   START
+   ========================================================= */
+document.getElementById('startBtn').addEventListener('click', () => {
+  const name = document.getElementById('studentNameInput').value.trim();
+  const code = document.getElementById('sessionCodeInput').value.trim();
+  state.studentName = name || 'Student';
+  state.sessionCode = code;
+  saveState();
+  document.getElementById('screenIntro').classList.remove('active');
+  document.getElementById('screenGame').classList.add('active');
+  updateProgressUI();
+  renderQuestion();
+});
+
+document.getElementById('resumeContinueBtn').addEventListener('click', () => {
+  hideModal('resumeOverlay');
+  const saved = loadState();
+  state = saved;
+  replaySavedBlocks(saved);
+  updateProgressUI();
+  document.getElementById('screenIntro').classList.remove('active');
+  document.getElementById('screenGame').classList.add('active');
+  if (state.finished) { finishCastle(); }
+  else { renderQuestion(); }
+});
+document.getElementById('resumeRestartBtn').addEventListener('click', () => {
+  hideModal('resumeOverlay');
+  localStorage.removeItem(GAME_STORAGE_KEY);
+});
+
+(function init(){
+  const saved = loadState();
+  if (saved && Object.keys(saved.tally || {}).length > 0) {
+    document.getElementById('resumeBody').textContent = 'Looks like ' + (saved.studentName || 'you') + ' was partway through building — ' + saved.placed + ' of ' + TOTAL + ' blocks placed. Want to continue where you left off?';
+    showModal('resumeOverlay');
+  }
+})();
+</script>
+</body>
+</html>
